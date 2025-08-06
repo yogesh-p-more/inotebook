@@ -4,6 +4,9 @@ const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const bcrypt = require('bcryptjs');
 var jwt = require('jsonwebtoken');
+var fetchuser = require('../middleware/fetchuser'); // Import the fetchuser middleware
+
+const JWT_SECRET = 'yogeshisgood$boy'; // Use a more secure secret in production
 
 router.post('/createuser', [
     body('name', 'Name must be at least 3 characters').isLength({ min: 3 }),
@@ -42,7 +45,6 @@ router.post('/createuser', [
         res.status(500).send("Internal Server Error");
     }
 })
-
 router.post('/login', [
     body('email', 'Enter a valid email').isEmail(),
     body('password', 'Password cannot be blank').exists()
@@ -56,12 +58,12 @@ router.post('/login', [
     try {
         let user = await User.findOne({ email });
         if (!user) {
-            return res.status(400).json({ error: "Please try to login with correct credentials" });
+            return res.status(400).json({ error: "Please try to login with correct credentials 1" });
         }
 
         const passwordCompare = await bcrypt.compare(password, user.password);
         if (!passwordCompare) {
-            return res.status(400).json({ error: "Please try to login with correct credentials" });
+            return res.status(400).json({ error: "Please try to login with correct credentials 2" });
         }
         const data = {
             user: {
@@ -70,6 +72,17 @@ router.post('/login', [
         }
         const authtoken = jwt.sign(data, JWT_SECRET);
         console.log(authtoken);
+        res.json({ authtoken });
+    } catch (error) {
+        console.error(error.message);
+        res.status(500).send("Internal Server Error");
+    }
+})
+router.post('/getuser', fetchuser, async (req, res) => {
+    try {
+        userId = req.user.id; // Get user ID from the request object set by fetchuser middleware
+        const user = await User.findById(userId).select("-password");
+        res.send(user);
     } catch (error) {
         console.error(error.message);
         res.status(500).send("Internal Server Error");
